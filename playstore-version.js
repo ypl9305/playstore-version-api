@@ -14,24 +14,29 @@ module.exports = async (req, res) => {
     });
 
     const $ = cheerio.load(data);
+    let version = null;
 
-    // Extraer el JSON oculto en <script type="application/ld+json">
-    const script = $('script[type="application/ld+json"]').html();
-    if (script) {
-      const json = JSON.parse(script);
-      const version = json.softwareVersion;
-      if (version) {
-        return res.status(200).json({ version: version.trim() });
+    // Buscar dentro de todos los scripts
+    $('script').each((_, script) => {
+      const content = $(script).html();
+      if (content && content.includes('"softwareVersion"')) {
+        try {
+          const jsonText = content.trim().match(/\{.*"softwareVersion":.*\}/s);
+          if (jsonText) {
+            const json = JSON.parse(jsonText[0]);
+            version = json.softwareVersion?.trim();
+          }
+        } catch (e) {
+          // ignorar errores de JSON
+        }
       }
-    }
+    });
 
-    // Fallback: buscar texto con patrón de versión en todo el HTML
-    const match = data.match(/(\d+\.\d+(\.\d+)?)/);
-    if (match) {
-      return res.status(200).json({ version: match[0] });
+    if (version) {
+      return res.status(200).json({ version });
+    } else {
+      return res.status(404).json({ error: "Versión no encontrada" });
     }
-
-    return res.status(404).json({ error: "Versión no encontrada" });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
