@@ -14,12 +14,14 @@ module.exports = async (req, res) => {
     });
 
     const $ = cheerio.load(data);
-
     let version = null;
-    $("div.hAyfc").each((_, el) => {
-      const title = $(el).find(".BgcNfc").text();
-      if (title === "Versión actual") {
-        version = $(el).find(".IQ1z0d .htlgb").first().text();
+
+    // Intenta encontrar cualquier bloque de texto que parezca ser la versión
+    $('div span').each((i, el) => {
+      const text = $(el).text().trim();
+      if (/^\d+\.\d+(\.\d+)?$/.test(text)) {
+        version = text;
+        return false; // detener loop
       }
     });
 
