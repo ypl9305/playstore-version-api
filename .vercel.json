@@ -5,5 +5,11 @@
       "src": "api/playstore-version.js",
       "use": "@vercel/node"
     }
+  ],
+  "routes": [
+    {
+      "src": "/version",
+      "dest": "api/playstore-version.js"
+    }
   ]
 }
