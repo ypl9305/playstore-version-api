@@ -14,22 +14,24 @@ module.exports = async (req, res) => {
     });
 
     const $ = cheerio.load(data);
-    let version = null;
 
-    // Intenta encontrar cualquier bloque de texto que parezca ser la versión
-    $('div span').each((i, el) => {
-      const text = $(el).text().trim();
-      if (/^\d+\.\d+(\.\d+)?$/.test(text)) {
-        version = text;
-        return false; // detener loop
+    // Extraer el JSON oculto en <script type="application/ld+json">
+    const script = $('script[type="application/ld+json"]').html();
+    if (script) {
+      const json = JSON.parse(script);
+      const version = json.softwareVersion;
+      if (version) {
+        return res.status(200).json({ version: version.trim() });
       }
-    });
-
-    if (version) {
-      return res.status(200).json({ version });
-    } else {
-      return res.status(404).json({ error: "No se encontró la versión" });
     }
+
+    // Fallback: buscar texto con patrón de versión en todo el HTML
+    const match = data.match(/(\d+\.\d+(\.\d+)?)/);
+    if (match) {
+      return res.status(200).json({ version: match[0] });
+    }
+
+    return res.status(404).json({ error: "Versión no encontrada" });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
